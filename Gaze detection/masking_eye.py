@@ -8,7 +8,7 @@ import numpy as np
 
 cam=cv2.VideoCapture(0)
 #initialize the face mesh
-face_mesh=mp.solutions.face_mesh.FaceMesh(max_num_faces=4) 
+face_mesh=mp.solutions.face_mesh.FaceMesh(max_num_faces=4, refine_landmarks=True) 
 #initialize the drawing utilities
 mp_drawing = mp.solutions.drawing_utils
 drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
@@ -57,6 +57,15 @@ while True:
                                   (face_landmarks.landmark[160].x * frame.shape[1], face_landmarks.landmark[160].y * frame.shape[0]),
                                   (face_landmarks.landmark[161].x * frame.shape[1], face_landmarks.landmark[161].y * frame.shape[0]),
                                   (face_landmarks.landmark[246].x * frame.shape[1], face_landmarks.landmark[246].y * frame.shape[0])], np.int32)
+            
+            right_iris = np.array([(face_landmarks.landmark[473].x * frame.shape[1], face_landmarks.landmark[473].y * frame.shape[0]) ], np.int32)
+            cv2.circle(frame, (right_iris[0][0], right_iris[0][1]), 2, (0, 255, 0), 2)
+
+            left_threshold = right_iris[0][0]-face_landmarks.landmark[362].x
+            
+
+            right_threshold = right_iris[0][0]-face_landmarks.landmark[263].x
+            print(f"right {right_threshold} left {left_threshold}")
 
             #cv2.polylines(frame, [left_eye], True, (0, 255, 0), 2)
             #cv2.polylines(frame, [right_eye], True, (0, 255, 0), 2)
@@ -68,28 +77,28 @@ while True:
             cv2.fillPoly(mask, [right_eye], 255)
             right_eye_mask = cv2.bitwise_and(rgb_frame, rgb_frame, mask=mask)
 
-            #get the min and max coordinates of the left eye
+            #get thime min and max coordinates of the left eye
             min_x = np.min(right_eye[:, 0])
             min_y = np.min(right_eye[:, 1])
             max_x = np.max(right_eye[:, 0])
             max_y = np.max(right_eye[:, 1])
 
-            #get the eye frame
-            eye_frame=frame[min_y:max_y,min_x:max_x]
-            eye_frame=cv2.resize(eye_frame, None, fx=5,fy=5)
-            cv2.imshow('Eye Frame',eye_frame)  
+            #isolate the eye
+            eye_isolated=right_eye_mask[min_y:max_y,min_x:max_x]
+            if eye_isolated.any() :
+                eye_isolatedResized = cv2.resize(eye_isolated, None, fx=5,fy=5)
+                cv2.imshow('Eye Frame',eye_isolatedResized)  #show the eye frame isolated
 
             #convert the eye frame to gray
-            gray_eye = cv2.cvtColor(eye_frame, cv2.COLOR_BGR2GRAY)
-            _, threshold_eye = cv2.threshold(gray_eye, 70, 255, cv2.THRESH_BINARY)
-            cv2.imshow('Threshold Eye', threshold_eye) 
+            eye_isolatedResized = cv2.cvtColor(eye_isolatedResized, cv2.COLOR_BGR2GRAY)  
+            _,gray_eye = cv2.threshold(eye_isolatedResized, 70, 255, cv2.THRESH_BINARY)
+            cv2.imshow('gray_ Eye', gray_eye)  #show the gray eye frame
 
             #apply mask and isolate the eye
-            cv2.imshow('right_eye_mask', right_eye_mask)          
+            #cv2.imshow('right_eye_mask', right_eye_mask)          
     
 
-    cv2.imshow('Eye Iris Detection',frame) 
-    if cv2.waitKey(1) == ord('q'):
+    #cv2.imshow('Eye Iris Detection',frame) 
+    if cv2.waitKey(100) == ord('q'):
         break
-
 
