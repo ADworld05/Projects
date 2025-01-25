@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import pyautogui
+import time
 
 # Initialize MediaPipe FaceMesh
 mp_face_mesh = mp.solutions.face_mesh
@@ -23,6 +24,7 @@ def get_iris_position(eye_region):
 LEFT_EYE_INDICES = [362, 385, 387, 263, 373, 380]
 # Parameters for detecting significant movement
 THRESHOLD = 5  # Sensitivity for detecting vertical movement
+CLOCK_PERIOD = 2
 
 # Start video capture
 cap = cv2.VideoCapture(0)
@@ -37,9 +39,19 @@ landmarks = [(lm.x * frame.shape[1], lm.y * frame.shape[0]) for lm in results.mu
 left_eye = get_eye_region(landmarks, LEFT_EYE_INDICES)
 INITIAL_IRIS_Y = get_iris_position(left_eye)
 
+previous_time = time.time()
+
+def clock(previous_time):
+    current_time = time.time()
+    if current_time - previous_time > CLOCK_PERIOD:
+        print(current_time-previous_time)
+        return True
+    else:
+        return False
 
 
 while True:
+
     ret, frame = cap.read()
     if not ret:
         break
@@ -60,17 +72,16 @@ while True:
             left_iris_y = get_iris_position(left_eye)
 
             # Compare current iris position to previous position
-            if INITIAL_IRIS_Y is not None:
+            if INITIAL_IRIS_Y is not None and clock(previous_time):
+                previous_time = time.time()
                 movement = left_iris_y - INITIAL_IRIS_Y
 
                 if movement > THRESHOLD:
                     pyautogui.press('down')  # Simulate down arrow key press
                     print("Down Key Pressed")
-                    pyautogui.sleep(2)
                 elif movement < -THRESHOLD:
                     pyautogui.press('up')  # Simulate up arrow key press
                     print("Up Key Pressed")
-                    pyautogui.sleep(2)
 
             # Update previous iris position
             # previous_iris_y = left_iris_y
@@ -86,7 +97,7 @@ while True:
     cv2.imshow("Iris Tracker", frame)
 
     # Break the loop on 'q' key press
-    if cv2.waitKey(10) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 cap.release()

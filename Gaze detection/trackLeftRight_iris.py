@@ -17,6 +17,7 @@ while True:
     _, frame = cam.read()
     
     # Convert frame to RGB
+    frame = cv2.flip(frame,1)
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     output = face_mesh.process(rgb_frame)
 
@@ -28,8 +29,6 @@ while True:
             left_x = int(face_landmarks.landmark[362].x * frame.shape[1])
             right_x = int(face_landmarks.landmark[263].x * frame.shape[1])
 
-            
-            
             # Calculate differences
             left_diff = abs(iris_x - left_x)
             right_diff = abs(iris_x - right_x)
@@ -38,12 +37,10 @@ while True:
 
             if ratio < 0.8:
                 cv2.putText(frame, "Looking left", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-                pyautogui.press('left')
-                pyautogui.sleep(1)
+                # pyautogui.press('left')
             elif ratio > 1.6:
                 cv2.putText(frame, "Looking right", (30, 14), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-                pyautogui.press('right')
-                pyautogui.sleep(1)
+                # pyautogui.press('right')
             else:
                 cv2.putText(frame, "Looking straight", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             
@@ -60,10 +57,9 @@ while True:
             blink_ratio = int(face_landmarks.landmark[145].y * frame.shape[0]) - int(face_landmarks.landmark[159].y * frame.shape[0])
             cv2.putText(frame, f"Blink Ratio: {blink_ratio}", (30, 170), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2) 
 
-            if blink_ratio < 10:
+            if blink_ratio < 5:
                 cv2.putText(frame, "Blinking", (30, 200), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
-                pyautogui.click()
-                pyautogui.sleep(1)
+                # pyautogui.click()
 
             # Display calculated distances
             cv2.putText(frame, f"Left Diff: {left_diff}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
