@@ -38,10 +38,11 @@ IRIS_LEFT = 362
 IRIS_RIGHT = 263
 
 # Parameters
-THRESHOLD_VERTICAL = 5  # Sensitivity for detecting vertical movement
+THRESHOLD_VERTICAL_U = 4  # Sensitivity for detecting vertical movement
+THRESHOLD_VERTICAL_D = 6 # Sensitivity for detecting vertical movement
 THRESHOLD_HORIZONTAL_L = 0.8  # Ratio sensitivity for left detection
-THRESHOLD_HORIZONTAL_R = 0.8  # Ratio sensitivity for right detection
-BLINK_THRESHOLD = 5  # Sensitivity for blink detection
+THRESHOLD_HORIZONTAL_R = 1.4  # Ratio sensitivity for right detection
+
 
 # Start video capture
 cap = cv2.VideoCapture(0)
@@ -55,8 +56,14 @@ if results.multi_face_landmarks:
     landmarks = [(lm.x * frame.shape[1], lm.y * frame.shape[0]) for lm in results.multi_face_landmarks[0].landmark]
     left_eye = get_eye_region(landmarks, LEFT_EYE_INDICES)
     INITIAL_IRIS_Y = get_iris_vertical_position(left_eye)
+
+    # Sensitivity for blink detection
+    top_y = int(results.multi_face_landmarks[0].landmark[BLINK_TOP].y * frame.shape[0])
+    bottom_y = int(results.multi_face_landmarks[0].landmark[BLINK_BOTTOM].y * frame.shape[0])
+    BLINK_THRESHOLD = (bottom_y - top_y)/2    
 else:
     INITIAL_IRIS_Y = None
+    BLINK_THRESHOLD = None
 
 previous_time = time.time()
 
@@ -94,48 +101,44 @@ while True:
             # Blink detection
             top_y = int(face_landmarks.landmark[BLINK_TOP].y * frame.shape[0])
             bottom_y = int(face_landmarks.landmark[BLINK_BOTTOM].y * frame.shape[0])
-            blink_ratio = bottom_y - top_y
+            blink_diff = bottom_y - top_y
 
             # Detect blinking
-            if blink_ratio < BLINK_THRESHOLD and clock(previous_time, interval=2):
+            if blink_diff < BLINK_THRESHOLD and clock(previous_time, interval=2):
                 previous_time = time.time()
-                pyautogui.click()
+                # pyautogui.click()
                 print("Blink Detected")
-                break
 
             # Detect vertical movement (up-down)
             if INITIAL_IRIS_Y is not None:
                 vertical_movement = left_iris_y - INITIAL_IRIS_Y
 
-                if vertical_movement > THRESHOLD_VERTICAL  and clock(previous_time, interval=2):
+                if vertical_movement > THRESHOLD_VERTICAL_D  and clock(previous_time, interval=2):
                     previous_time = time.time()
-                    pyautogui.press("down")
+                    # pyautogui.press("down")
                     print("Down Key Pressed")
-                elif vertical_movement < -THRESHOLD_VERTICAL  and clock(previous_time, interval=2):
+                elif vertical_movement < -THRESHOLD_VERTICAL_U  and clock(previous_time, interval=2):
                     previous_time = time.time()
-                    pyautogui.press("up")
+                    # pyautogui.press("up")
                     print("Up Key Pressed")
 
             # Detect horizontal movement (left-right)
             if ratio < THRESHOLD_HORIZONTAL_L and clock(previous_time, interval=2):
                 previous_time = time.time()
-                pyautogui.press("left")
+                # pyautogui.press("left")
                 print("Left Key Pressed")
             elif ratio > THRESHOLD_HORIZONTAL_R and clock(previous_time, interval=2):  # Adjust ratio threshold for right
                 previous_time = time.time()
-                pyautogui.press("right")
+                # pyautogui.press("right")
                 print("Right Key Pressed")
 
-            # Detect blinking
-            if blink_ratio < BLINK_THRESHOLD:
-                pyautogui.click()
-                print("Blink Detected")
-
             # Visualization
+            cv2.circle(frame, (int(face_landmarks.landmark[159].x * frame.shape[1]), int(face_landmarks.landmark[159].y * frame.shape[0])), 3, (0, 255, 255), -1)         
+            cv2.circle(frame, (int(face_landmarks.landmark[145].x * frame.shape[1]), int(face_landmarks.landmark[145].y * frame.shape[0])), 3, (0, 255, 255), -1)          
             cv2.polylines(frame, [left_eye], True, (0, 255, 0), 1)
-            cv2.putText(frame, f"Vertical Y: {int(left_iris_y)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            cv2.putText(frame, f"Vertical Y: {int(left_iris_y-INITIAL_IRIS_Y)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             cv2.putText(frame, f"Horizontal Ratio: {ratio}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-            cv2.putText(frame, f"Blink Ratio: {blink_ratio}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+            cv2.putText(frame, f"Blink Differernce: {blink_diff}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
     # Display the frame
     cv2.imshow("4-Way Eye Movement & Blink Tracker", frame)

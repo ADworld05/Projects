@@ -98,6 +98,13 @@ def handle_keypress(event):
     elif event.keysym == "Down" and current_row < len(key_buttons) - 1:
         move_highlight(current_row + 1, min(current_col, len(key_buttons[current_row + 1]) - 1))
 
+def select_highlighted_key(event):
+    """Simulate a button press for the highlighted key."""
+    key_buttons[current_row][current_col].invoke()  # Simulates a button click
+
+# Bind Enter key to trigger the highlighted button
+root.bind("<Button-1>", select_highlighted_key)
+
 # Bind arrow keys to movement
 root.bind("<Left>", handle_keypress)
 root.bind("<Right>", handle_keypress)
