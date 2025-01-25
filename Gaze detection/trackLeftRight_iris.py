@@ -39,9 +39,11 @@ while True:
             if ratio < 0.8:
                 cv2.putText(frame, "Looking left", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
                 pyautogui.press('left')
+                pyautogui.sleep(1)
             elif ratio > 1.6:
-                cv2.putText(frame, "Looking right", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+                cv2.putText(frame, "Looking right", (30, 14), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
                 pyautogui.press('right')
+                pyautogui.sleep(1)
             else:
                 cv2.putText(frame, "Looking straight", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             
@@ -61,6 +63,7 @@ while True:
             if blink_ratio < 10:
                 cv2.putText(frame, "Blinking", (30, 200), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
                 pyautogui.click()
+                pyautogui.sleep(1)
 
             # Display calculated distances
             cv2.putText(frame, f"Left Diff: {left_diff}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
