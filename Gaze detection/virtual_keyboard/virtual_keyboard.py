@@ -52,25 +52,25 @@ for row, key_row in enumerate(keys):
 # Add Spacebar and Backspace buttons separately
 space_button = tk.Button(
     root,
-    text="Space",
+    text="__",
     font=("Arial", 14),
-    width=15,
+    width=4,
     height=2,
     bg="lightgray",
     command=lambda: insert_char(" "),
 )
-space_button.grid(row=5, column=0, columnspan=5, pady=5)
+space_button.grid(row=4, column=5, columnspan=5, padx=5, pady=5)
 
 backspace_button = tk.Button(
     root,
-    text="Backspace",
+    text="⌫",
     font=("Arial", 14),
-    width=15,
+    width=4,
     height=2,
     bg="lightgray",
     command=backspace,
 )
-backspace_button.grid(row=5, column=5, columnspan=5, pady=5)
+backspace_button.grid(row=4, column=7, columnspan=5, padx=5, pady=5)
 
 # Add space and backspace to the button grid for navigation
 key_buttons.append([space_button, backspace_button])
@@ -97,6 +97,13 @@ def handle_keypress(event):
         move_highlight(current_row - 1, min(current_col, len(key_buttons[current_row - 1]) - 1))
     elif event.keysym == "Down" and current_row < len(key_buttons) - 1:
         move_highlight(current_row + 1, min(current_col, len(key_buttons[current_row + 1]) - 1))
+
+def select_highlighted_key(event):
+    """Simulate a button press for the highlighted key."""
+    key_buttons[current_row][current_col].invoke()  # Simulates a button click
+
+# Bind Enter key to trigger the highlighted button
+root.bind("<Button-1>", select_highlighted_key)
 
 # Bind arrow keys to movement
 root.bind("<Left>", handle_keypress)
