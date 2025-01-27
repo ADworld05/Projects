@@ -19,7 +19,7 @@ IRIS_LEFT = 362
 IRIS_RIGHT = 263
 THRESHOLD_VERTICAL_U = 4
 THRESHOLD_VERTICAL_D = 6
-THRESHOLD_HORIZONTAL_L = 0.8
+THRESHOLD_HORIZONTAL_L = 0.9
 THRESHOLD_HORIZONTAL_R = 1.4
 
 # Keyboard setup
@@ -110,7 +110,7 @@ def run_eye_tracker():
         initial_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
         top_y = landmarks[BLINK_TOP][1]
         bottom_y = landmarks[BLINK_BOTTOM][1]
-        blink_threshold = (bottom_y - top_y) / 2
+        blink_threshold = (bottom_y - top_y) * 0.75
     else:
         initial_iris_y = None
         blink_threshold = None
@@ -146,27 +146,33 @@ def run_eye_tracker():
                 if blink_diff < blink_threshold and time.time() - previous_time > 2:
                     previous_time = time.time()
                     root.after(0, blink_action)
+                    print("Blink")
 
                 vertical_movement = left_iris_y - initial_iris_y
-                if vertical_movement > THRESHOLD_VERTICAL_D and time.time() - previous_time > 2:
+                if vertical_movement > THRESHOLD_VERTICAL_D and time.time() - previous_time > 1:
                     previous_time = time.time()
-                    if current_row < len(key_buttons) - 1:
+                    if current_row < len(key_buttons) - 1 and current_col < len(key_buttons[current_row + 1]):
                         root.after(0, move_highlight, current_row + 1, current_col)
-                elif vertical_movement < -THRESHOLD_VERTICAL_U and time.time() - previous_time > 2:
+                        print("Down")
+                elif vertical_movement < -THRESHOLD_VERTICAL_U and time.time() - previous_time > 1:
                     previous_time = time.time()
                     if current_row > 0:
                         root.after(0, move_highlight, current_row - 1, current_col)
+                        print("Up")
 
-                if ratio < THRESHOLD_HORIZONTAL_L and time.time() - previous_time > 2:
+                if ratio < THRESHOLD_HORIZONTAL_L and time.time() - previous_time > 1:
                     previous_time = time.time()
                     if current_col > 0:
                         root.after(0, move_highlight, current_row, current_col - 1)
-                elif ratio > THRESHOLD_HORIZONTAL_R and time.time() - previous_time > 2:
+                        print("Left")
+                elif ratio > THRESHOLD_HORIZONTAL_R and time.time() - previous_time > 1:
                     previous_time = time.time()
                     if current_col < len(key_buttons[current_row]) - 1:
                         root.after(0, move_highlight, current_row, current_col + 1)
+                        print("Right")
 
                 # Visualization
+                cv2.line(frame, (0, int(initial_iris_y)), (frame.shape[1], int(initial_iris_y)), (0, 255, 255), 2)
                 cv2.circle(frame, (int(face_landmarks.landmark[159].x * frame.shape[1]), int(face_landmarks.landmark[159].y * frame.shape[0])), 3, (0, 255, 255), -1)         
                 cv2.circle(frame, (int(face_landmarks.landmark[145].x * frame.shape[1]), int(face_landmarks.landmark[145].y * frame.shape[0])), 3, (0, 255, 255), -1)          
                 cv2.polylines(frame, [left_eye], True, (0, 255, 0), 1)
