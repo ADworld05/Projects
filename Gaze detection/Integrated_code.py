@@ -13,16 +13,30 @@ face_mesh = mp.solutions.face_mesh.FaceMesh(
 
 # Landmark indices for eyes and iris
 LEFT_EYE_INDICES = [362, 385, 387, 263, 373, 380]
+RIGHT_EYE_INDICES = [133, 158, 150, 33, 144, 153]
 BLINK_TOP = 159
 BLINK_BOTTOM = 145
 IRIS_LEFT = 362
 IRIS_RIGHT = 263
 THRESHOLD_VERTICAL_U = 4
 THRESHOLD_VERTICAL_D = 6
-THRESHOLD_HORIZONTAL_L = 0.9
+THRESHOLD_HORIZONTAL_L = 1
 THRESHOLD_HORIZONTAL_R = 1.4
 
 # Keyboard setup
+
+def insert_char(char):
+    """Inserts the clicked character into the input field."""
+    current_text = input_field.get()
+    input_field.delete(0, tk.END)
+    input_field.insert(0, current_text + char)
+
+def backspace():
+    """Deletes the last character in the input field."""
+    current_text = input_field.get()
+    input_field.delete(0, tk.END)
+    input_field.insert(0, current_text[:-1])
+
 root = tk.Tk()
 root.title("Iris-Controlled Virtual Keyboard")
 root.geometry("720x440")
@@ -37,6 +51,7 @@ keys = [
     ["z", "x", "c", "v", "b", "n", "m"],
 ]
 
+# Dictionary to store button references for highlighting
 key_buttons = []
 for row, key_row in enumerate(keys):
     button_row = []
@@ -48,35 +63,37 @@ for row, key_row in enumerate(keys):
             width=4,
             height=2,
             bg="lightgray",
-            command=lambda char=key: input_field.insert(tk.END, char),
+            command=lambda char=key: insert_char(char),
         )
         btn.grid(row=row + 1, column=col, padx=5, pady=5)
         button_row.append(btn)
+
+    if(row == 3):
+        # Add space and backspace to the button grid for navigation
+        btn = tk.Button(
+            root,
+            text="__",
+            font=("Arial", 14),
+            width=4,
+            height=2,
+            bg="lightgray",
+            command=lambda: insert_char(" "),
+        )
+        btn.grid(row=row + 1, column=7, padx=5, pady=5)
+        button_row.append(btn)
+        btn = tk.Button(
+            root,
+            text="⌫",
+            font=("Arial", 14),
+            width=4,
+            height=2,
+            bg="lightgray",
+            command=backspace,
+        )
+        btn.grid(row=row + 1, column=8, padx=5, pady=5)
+        button_row.append(btn)
+
     key_buttons.append(button_row)
-
-space_button = tk.Button(
-    root,
-    text="Space",
-    font=("Arial", 14),
-    width=15,
-    height=2,
-    bg="lightgray",
-    command=lambda: input_field.insert(tk.END, " "),
-)
-space_button.grid(row=5, column=0, columnspan=5, pady=5)
-
-backspace_button = tk.Button(
-    root,
-    text="Backspace",
-    font=("Arial", 14),
-    width=15,
-    height=2,
-    bg="lightgray",
-    command=lambda: input_field.delete(len(input_field.get()) - 1),
-)
-backspace_button.grid(row=5, column=5, columnspan=5, pady=5)
-
-key_buttons.append([space_button, backspace_button])
 
 current_row, current_col = 0, 0
 key_buttons[current_row][current_col].config(bg="yellow")
@@ -98,6 +115,8 @@ def blink_action():
 
 # Eye tracker function
 def run_eye_tracker():
+
+    #Preset module for vertical and blink threshold
     global current_row, current_col
     cap = cv2.VideoCapture(0)
     _, frame = cap.read()
@@ -110,12 +129,48 @@ def run_eye_tracker():
         initial_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
         top_y = landmarks[BLINK_TOP][1]
         bottom_y = landmarks[BLINK_BOTTOM][1]
-        blink_threshold = (bottom_y - top_y) * 0.75
+        blink_threshold = (bottom_y - top_y) * 0.5
     else:
         initial_iris_y = None
         blink_threshold = None
 
+    # Preset module for left-right threshold
     previous_time = time.time()
+    max_ratio = 0
+    min_ratio = 10
+
+    print("Move your iris 1 or 2 times towards left and right while keeping your face steady")
+    while time.time()-previous_time < 10:
+
+        cap = cv2.VideoCapture(0)
+        _, frame = cap.read()
+        frame = cv2.flip(frame,1)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb_frame)
+
+        if results.multi_face_landmarks:
+            landmarks = [(lm.x * frame.shape[1], lm.y * frame.shape[0]) for lm in results.multi_face_landmarks[0].landmark]
+            iris1_x = landmarks[473][0]
+            left1_x = landmarks[IRIS_LEFT][0]
+            right1_x = landmarks[IRIS_RIGHT][0]
+            left_diff = abs(iris1_x - left1_x)
+            right_diff = abs(iris1_x - right1_x)
+            ratio = left_diff / right_diff
+            if(ratio>max_ratio):
+                max_ratio = ratio
+            if(ratio<min_ratio):
+                min_ratio = ratio
+            left_threshold = min_ratio*0.67 + max_ratio*0.33
+            right_threshold = min_ratio*0.25 + max_ratio*0.75
+            cv2.putText(frame, 'Move your iris 1 or 2 times towards left and right while keeping your face steady', (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 20, 147), 2)
+
+        cv2.imshow("Eye Tracker", frame)
+        cv2.waitKey(1)
+
+    print("left_threshold =" ,left_threshold)
+    print("right_threshold =" ,right_threshold)
+    previous_time = time.time()
+    counter = 0
 
     while True:
         ret, frame = cap.read()
@@ -143,36 +198,43 @@ def run_eye_tracker():
                 bottom_y = landmarks[BLINK_BOTTOM][1]
                 blink_diff = bottom_y - top_y
 
-                if blink_diff < blink_threshold and time.time() - previous_time > 2:
+                if blink_diff < blink_threshold and time.time() - previous_time > 0.8:
                     previous_time = time.time()
-                    root.after(0, blink_action)
-                    print("Blink")
+                    counter += 1
+                    if counter >= 2:
+                        root.after(0, blink_action)
+                        print("Blink")
+                        counter = 0
 
                 vertical_movement = left_iris_y - initial_iris_y
-                if vertical_movement > THRESHOLD_VERTICAL_D and time.time() - previous_time > 1:
+                if vertical_movement > THRESHOLD_VERTICAL_D and time.time() - previous_time > 0.5:
                     previous_time = time.time()
+                    counter = 0
                     if current_row < len(key_buttons) - 1 and current_col < len(key_buttons[current_row + 1]):
                         root.after(0, move_highlight, current_row + 1, current_col)
                         print("Down")
                 elif vertical_movement < -THRESHOLD_VERTICAL_U and time.time() - previous_time > 1:
                     previous_time = time.time()
+                    counter = 0           
                     if current_row > 0:
                         root.after(0, move_highlight, current_row - 1, current_col)
                         print("Up")
 
-                if ratio < THRESHOLD_HORIZONTAL_L and time.time() - previous_time > 1:
+                if ratio < left_threshold and time.time() - previous_time > 1:
+                    counter = 0                    
                     previous_time = time.time()
                     if current_col > 0:
                         root.after(0, move_highlight, current_row, current_col - 1)
                         print("Left")
-                elif ratio > THRESHOLD_HORIZONTAL_R and time.time() - previous_time > 1:
+                elif ratio > right_threshold and time.time() - previous_time > 1:
+                    counter = 0
                     previous_time = time.time()
                     if current_col < len(key_buttons[current_row]) - 1:
                         root.after(0, move_highlight, current_row, current_col + 1)
                         print("Right")
 
                 # Visualization
-                cv2.line(frame, (0, int(initial_iris_y)), (frame.shape[1], int(initial_iris_y)), (0, 255, 255), 2)
+                cv2.line(frame, (0, int(initial_iris_y)), (frame.shape[1], int(initial_iris_y)), (0, 255, 255), 1)
                 cv2.circle(frame, (int(face_landmarks.landmark[159].x * frame.shape[1]), int(face_landmarks.landmark[159].y * frame.shape[0])), 3, (0, 255, 255), -1)         
                 cv2.circle(frame, (int(face_landmarks.landmark[145].x * frame.shape[1]), int(face_landmarks.landmark[145].y * frame.shape[0])), 3, (0, 255, 255), -1)          
                 cv2.polylines(frame, [left_eye], True, (0, 255, 0), 1)
