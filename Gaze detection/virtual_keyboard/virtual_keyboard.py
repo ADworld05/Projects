@@ -89,7 +89,6 @@ def move_highlight(new_row, new_col):
     key_buttons[current_row][current_col].config(bg="lightgray")  # Reset previous
     current_row, current_col = new_row, new_col
     key_buttons[current_row][current_col].config(bg="yellow")  # Highlight new
-    print(current_col, current_row)
 
 def handle_keypress(event):
     """Handle arrow key presses to move the highlighted key."""
