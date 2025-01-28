@@ -24,35 +24,13 @@ input_field = tk.Entry(root, font=("Arial", 18), width=40)
 input_field.grid(row=0, column=0, columnspan=10, pady=10)
 
 # Keyboard layout
+
 keys = [
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],  # Row 1
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],  # Row 2
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],       # Row 3
-    ["z", "x", "c", "v", "b", "n", "m",],                # Row 4
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    ["z", "x", "c", "v", "b", "n", "m"],
 ]
-
-# # Add Spacebar and Backspace buttons separately
-# space_button = tk.Button(
-#     root,
-#     text="__",
-#     font=("Arial", 14),
-#     width=4,
-#     height=2,
-#     bg="lightgray",
-#     command=lambda: insert_char(" "),
-# )
-# space_button.grid(row=3, column=7, padx=5, pady=5)
-
-# backspace_button = tk.Button(
-#     root,
-#     text="⌫",
-#     font=("Arial", 14),
-#     width=4,
-#     height=2,
-#     bg="lightgray",
-#     command=backspace,
-# )
-# backspace_button.grid(row=3, column=8, padx=5, pady=5)
 
 # Dictionary to store button references for highlighting
 key_buttons = []
@@ -70,7 +48,7 @@ for row, key_row in enumerate(keys):
         )
         btn.grid(row=row + 1, column=col, padx=5, pady=5)
         button_row.append(btn)
-    print("row = " , row)
+
     if(row == 3):
         # Add space and backspace to the button grid for navigation
         btn = tk.Button(
@@ -95,7 +73,11 @@ for row, key_row in enumerate(keys):
         )
         btn.grid(row=row + 1, column=8, padx=5, pady=5)
         button_row.append(btn)
+
     key_buttons.append(button_row)
+
+current_row, current_col = 0, 0
+key_buttons[current_row][current_col].config(bg="yellow")
 
 # Initial highlighted key
 current_row, current_col = 0, 0
