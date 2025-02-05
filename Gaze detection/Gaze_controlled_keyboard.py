@@ -27,8 +27,8 @@ IRIS1_LEFT = 362
 IRIS1_RIGHT = 263
 IRIS2_LEFT = 33
 IRIS2_RIGHT = 133
-THRESHOLD_VERTICAL_U = 0.15
-THRESHOLD_VERTICAL_D = 0.30
+THRESHOLD_VERTICAL_U = -6
+THRESHOLD_VERTICAL_D = 6
 THRESHOLD_HORIZONTAL = 2
 
 # Keyboard setup
@@ -54,9 +54,9 @@ input_field.grid(row=0, column=0, columnspan=10, pady=10)
 
 keys = [
     ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-    ["z", "x", "c", "v", "b", "n", "m"],
+    ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+    ["k", "l", "m", "n", "o", "p", "q", "r", "s"],
+    ["t", "u", "v", "w", "x", "y", "z"],
 ]
 
 # Dictionary to store button references for highlighting
@@ -135,12 +135,12 @@ def run_eye_tracker():
 
     if results.multi_face_landmarks:
         landmarks = [(lm.x * frame.shape[1], lm.y * frame.shape[0]) for lm in results.multi_face_landmarks[0].landmark]
-        # initial_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
+        initial_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
         top_y = landmarks[BLINK_TOP][1]
         bottom_y = landmarks[BLINK_BOTTOM][1]
-        blink_threshold = (bottom_y - top_y) * 0.1
+        blink_threshold = (bottom_y - top_y) * 0.35
     else:
-        # initial_iris_y = None
+        initial_iris_y = None
         blink_threshold = None
         print("ERROR: No face detected !!")
 
@@ -183,7 +183,7 @@ def run_eye_tracker():
                 left_iris_diff = abs(left_iris_center[1] - left_eyebrow[0][1]) / abs(left_eyebrow[0][1] - nose_tip[0][1])
                 right_iris_diff = abs(right_iris_center[1] - right_eyebrow[0][1]) / abs(right_eyebrow[0][1] - nose_tip[0][1])
 
-                # left_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
+                left_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
 
                 iris_x1 = landmarks[473][0]
                 left_x1 = landmarks[IRIS1_LEFT][0]
@@ -207,7 +207,15 @@ def run_eye_tracker():
 
                 print(int(left_iris_diff*100),int(right_iris_diff*100))
 
-                # vertical_movement = left_iris_y - initial_iris_y
+                vertical_movement = left_iris_y - initial_iris_y
+
+                if blink_diff < blink_threshold and time.time() - previous_time > 0.5:
+                    previous_time = time.time()
+                    counter += 1
+                    if counter >= 2:
+                        root.after(0, blink_action)
+                        print("Blink")
+                        counter = 0
 
                 if ratio2 > THRESHOLD_HORIZONTAL and time.time() - previous_time > 1:
                     counter = 0                    
@@ -225,7 +233,7 @@ def run_eye_tracker():
                         root.after(0, move_highlight, current_row, current_col + 1)
                         print("Right")
 
-                elif (left_iris_diff > THRESHOLD_VERTICAL_D or right_iris_diff > THRESHOLD_VERTICAL_D) and time.time() - previous_time > 0.5:
+                elif (vertical_movement > THRESHOLD_VERTICAL_D) and time.time() - previous_time > 0.5:
                     previous_time = time.time()
                     counter = 0
                     print("Down")
@@ -233,7 +241,7 @@ def run_eye_tracker():
                         root.after(0, move_highlight, current_row + 1, current_col)
                         print("Down")
                         
-                elif (left_iris_diff < THRESHOLD_VERTICAL_U or right_iris_diff < THRESHOLD_VERTICAL_U) and time.time() - previous_time > 1:
+                elif (vertical_movement < THRESHOLD_VERTICAL_U) and time.time() - previous_time > 1:
                     previous_time = time.time()
                     counter = 0
                     print("Up")
@@ -241,24 +249,17 @@ def run_eye_tracker():
                         root.after(0, move_highlight, current_row - 1, current_col)
                         print("Up")
 
-                elif blink_diff < blink_threshold and time.time() - previous_time > 0.8:
-                    previous_time = time.time()
-                    counter += 1
-                    if counter >= 2:
-                        root.after(0, blink_action)
-                        print("Blink")
-                        counter = 0
                         
 
                 # Visualization
-                # cv2.line(frame, (0, int(initial_iris_y)), (frame.shape[1], int(initial_iris_y)), (0, 255, 255), 1)
-                # cv2.circle(frame, (int(face_landmarks.landmark[473].x * frame.shape[1]), int(face_landmarks.landmark[473].y * frame.shape[0])), 3, (0, 255, 255), -1)
-                # cv2.circle(frame, (int(face_landmarks.landmark[468].x * frame.shape[1]), int(face_landmarks.landmark[468].y * frame.shape[0])), 3, (0, 255, 255), -1)          
-                # cv2.polylines(frame, [left_eye], True, (0, 255, 0), 1)
-                # cv2.polylines(frame, [right_eye], True, (0, 255, 0), 1)
-                # cv2.putText(frame, f"Vertical Y: {int(left_iris_y-initial_iris_y)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                # cv2.putText(frame, f"Horizontal Ratio: {ratio1}  {ratio2}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                # cv2.putText(frame, f"Blink Differernce: {blink_diff}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                cv2.line(frame, (0, int(initial_iris_y)), (frame.shape[1], int(initial_iris_y)), (0, 255, 255), 1)
+                cv2.circle(frame, (int(face_landmarks.landmark[473].x * frame.shape[1]), int(face_landmarks.landmark[473].y * frame.shape[0])), 3, (0, 255, 255), -1)
+                cv2.circle(frame, (int(face_landmarks.landmark[468].x * frame.shape[1]), int(face_landmarks.landmark[468].y * frame.shape[0])), 3, (0, 255, 255), -1)          
+                cv2.polylines(frame, [left_eye], True, (0, 255, 0), 1)
+                cv2.polylines(frame, [right_eye], True, (0, 255, 0), 1)
+                cv2.putText(frame, f"Vertical Y: {int(left_iris_y-initial_iris_y)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                cv2.putText(frame, f"Horizontal Ratio: {ratio1}  {ratio2}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+                cv2.putText(frame, f"Blink Differernce: {blink_diff}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         # cv2.imshow("Eye Tracker", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
