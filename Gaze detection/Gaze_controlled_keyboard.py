@@ -4,6 +4,8 @@ import numpy as np
 import tkinter as tk
 import threading
 import time
+import pygame
+import os
 
 # Eye tracking setup
 mp_face_mesh = mp.solutions.face_mesh
@@ -17,7 +19,7 @@ RIGHT_IRIS = [469, 470, 471, 472]
 LEFT_EYE_TOP_BOTTOM = [386, 374]  # Top and bottom of the left eye
 RIGHT_EYE_TOP_BOTTOM = [159, 145]  # Top and bottom of the right eye
 LEFT_EYEBROW = [70]  # Approximate top of left eyebrow
-RIGHT_EYEBROW = [300]  # Approximate top of right eyebrow
+RIGHT_EYEBROW = [300]  # Approximate top of right eyebow
 NOSE_TIP = [1]  # Nose tip landmark
 RIGHT_EYE_INDICES = [362, 385, 387, 263, 373, 380]
 LEFT_EYE_INDICES = [133, 158, 160, 33, 144, 153]
@@ -32,6 +34,21 @@ THRESHOLD_VERTICAL_D = 6
 THRESHOLD_HORIZONTAL = 2
 
 # Keyboard setup
+
+# Initialize pygame for sound
+pygame.mixer.init()
+
+def play_sound(char):
+    """Plays sound for the selected key."""
+    try:
+        sound_file = f"sounds/{char}.mp3"
+        if os.path.exists(sound_file):  # Ensure the file exists before playing
+            pygame.mixer.music.load(sound_file)
+            pygame.mixer.music.play()
+        else:
+            print(f"Sound file not found: {sound_file}")
+    except Exception as e:
+        print(f"Error playing sound for {char}: {e}")
 
 def insert_char(char):
     """Inserts the clicked character into the input field."""
@@ -116,6 +133,15 @@ def move_highlight(new_row, new_col):
     current_row, current_col = new_row, new_col
     key_buttons[current_row][current_col].config(bg="yellow")
 
+    # Get the character at the new position and play the sound
+    char = key_buttons[current_row][current_col].cget("text")
+    if char == "__":
+        char = "space"
+    elif char == "⌫":
+        char = "backspace"
+    
+    play_sound(char)
+
 
 def blink_action():
     key_buttons[current_row][current_col].invoke()
@@ -138,7 +164,7 @@ def run_eye_tracker():
         initial_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
         top_y = landmarks[BLINK_TOP][1]
         bottom_y = landmarks[BLINK_BOTTOM][1]
-        blink_threshold = (bottom_y - top_y) * 0.35
+        blink_threshold = (bottom_y - top_y) * 0.2
     else:
         initial_iris_y = None
         blink_threshold = None
@@ -205,11 +231,11 @@ def run_eye_tracker():
                 bottom_y = landmarks[BLINK_BOTTOM][1]
                 blink_diff = bottom_y - top_y
 
-                print(int(left_iris_diff*100),int(right_iris_diff*100))
+                # print(int(left_iris_diff*100),int(right_iris_diff*100))
 
                 vertical_movement = left_iris_y - initial_iris_y
 
-                if blink_diff < blink_threshold and time.time() - previous_time > 0.5:
+                if blink_diff < blink_threshold and time.time() - previous_time > 0.8:
                     previous_time = time.time()
                     counter += 1
                     if counter >= 2:
@@ -252,14 +278,14 @@ def run_eye_tracker():
                         
 
                 # Visualization
-                cv2.line(frame, (0, int(initial_iris_y)), (frame.shape[1], int(initial_iris_y)), (0, 255, 255), 1)
+                # cv2.line(frame, (0, int(initial_iris_y)), (frame.shape[1], int(initial_iris_y)), (0, 255, 255), 1)
                 cv2.circle(frame, (int(face_landmarks.landmark[473].x * frame.shape[1]), int(face_landmarks.landmark[473].y * frame.shape[0])), 3, (0, 255, 255), -1)
                 cv2.circle(frame, (int(face_landmarks.landmark[468].x * frame.shape[1]), int(face_landmarks.landmark[468].y * frame.shape[0])), 3, (0, 255, 255), -1)          
                 cv2.polylines(frame, [left_eye], True, (0, 255, 0), 1)
                 cv2.polylines(frame, [right_eye], True, (0, 255, 0), 1)
-                cv2.putText(frame, f"Vertical Y: {int(left_iris_y-initial_iris_y)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                cv2.putText(frame, f"Horizontal Ratio: {ratio1}  {ratio2}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                cv2.putText(frame, f"Blink Differernce: {blink_diff}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                cv2.putText(frame, f"Eye controlled keyborad- NIT Durgapur", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                cv2.putText(frame, f"Vertical Y: {int(left_iris_y-initial_iris_y)}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+                cv2.putText(frame, f"Blink Differernce: {int(blink_diff)}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         # cv2.imshow("Eye Tracker", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):

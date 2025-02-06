@@ -1,6 +1,23 @@
 #highlighting the keys with arrow keys
 
 import tkinter as tk
+import pygame
+import os
+
+# Initialize pygame for sound
+pygame.mixer.init()
+
+def play_sound(char):
+    """Plays sound for the selected key."""
+    try:
+        sound_file = f"sounds/{char}.mp3"
+        if os.path.exists(sound_file):  # Ensure the file exists before playing
+            pygame.mixer.music.load(sound_file)
+            pygame.mixer.music.play()
+        else:
+            print(f"Sound file not found: {sound_file}")
+    except Exception as e:
+        print(f"Error playing sound for {char}: {e}")
 
 def insert_char(char):
     """Inserts the clicked character into the input field."""
@@ -27,9 +44,9 @@ input_field.grid(row=0, column=0, columnspan=10, pady=10)
 
 keys = [
     ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-    ["z", "x", "c", "v", "b", "n", "m"],
+    ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+    ["k", "l", "m", "n", "o", "p", "q", "r", "s"],
+    ["t", "u", "v", "w", "x", "y", "z"],
 ]
 
 # Dictionary to store button references for highlighting
@@ -84,11 +101,19 @@ current_row, current_col = 0, 0
 key_buttons[current_row][current_col].config(bg="yellow")
 
 def move_highlight(new_row, new_col):
-    """Move the highlight to the new position."""
     global current_row, current_col
-    key_buttons[current_row][current_col].config(bg="lightgray")  # Reset previous
+    key_buttons[current_row][current_col].config(bg="lightgray")
     current_row, current_col = new_row, new_col
-    key_buttons[current_row][current_col].config(bg="yellow")  # Highlight new
+    key_buttons[current_row][current_col].config(bg="yellow")
+
+    # Get the character at the new position and play the sound
+    char = key_buttons[current_row][current_col].cget("text")
+    if char == "__":
+        char = "space"
+    elif char == "⌫":
+        char = "backspace"
+    
+    play_sound(char)
 
 def handle_keypress(event):
     """Handle arrow key presses to move the highlighted key."""
