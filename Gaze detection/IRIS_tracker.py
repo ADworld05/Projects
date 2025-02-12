@@ -1,3 +1,11 @@
+# to tract the distance between iris and the landmarks 
+
+# to display coordinates on the eye region in graph form
+# measure relative distance from landmarks
+import cv2
+import mediapipe as mp
+import time
+import numpy as np
 import tkinter as tk
 
 def insert_char(char):
@@ -90,3 +98,62 @@ root.bind("<Down>", handle_keypress)
 
 # Run the application
 root.mainloop()
+
+
+cap = cv2.VideoCapture(0)
+face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
+
+def get_distance(iris, eye_landmark):
+    x1 = iris.x * frame.shape[1]
+    y1 = iris.y * frame.shape[0]
+    x2 = eye_landmark.x * frame.shape[1]
+    y2 = eye_landmark.y * frame.shape[0]
+    return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+
+distances_right = {'left': [], 'right': [], 'top': [], 'bottom': []}
+distances_left = {'left': [], 'right': [], 'top': [], 'bottom': []}
+
+
+while True:
+    _, frame = cap.read()
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #img_height, img_width = frame.shape[:2]
+    output_frame = face_mesh.process(rgb_frame)
+    landmark_points = output_frame.multi_face_landmarks
+
+    if landmark_points:
+        landmarks = landmark_points[0].landmark
+
+        right_iris = landmarks[473]
+        right_landmarks = {
+            'left': landmarks[362], 'right': landmarks[263],
+            'top': landmarks[386], 'bottom': landmarks[374]
+        }
+        for direction in right_landmarks:
+            distances_right[direction].append(
+                get_distance(right_iris, right_landmarks[direction])
+            )
+
+        # Left Eye Processing
+        left_iris = landmarks[468]
+        left_landmarks = {
+            'left': landmarks[33], 'right': landmarks[133],
+            'top': landmarks[159], 'bottom': landmarks[145]
+        }
+        for direction in left_landmarks:
+            distances_left[direction].append(
+                get_distance(left_iris, left_landmarks[direction])
+            )  
+
+        print(distances_right)
+        print(distances_left)
+        time.sleep(1) 
+             
+   
+    cv2.imshow('Eye Iris Detection', frame)
+    if cv2.waitKey(1) == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
