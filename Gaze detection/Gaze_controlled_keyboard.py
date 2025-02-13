@@ -25,7 +25,7 @@ tk.Label(root, text="Select left-right sensitivity level:", font=("Arial", 12)).
 sensitivity_var = tk.StringVar(value="")
 
 tk.Radiobutton(root, text="High", variable=sensitivity_var, value="High").pack(anchor="w", padx=20)
-tk.Radiobutton(root, text="Medium", variable=sensitivity_var, value="Medium").pack(anchor="w", padx=20)
+tk.Radiobutton(root, text="Medium (Recommended)", variable=sensitivity_var, value="Medium").pack(anchor="w", padx=20)
 tk.Radiobutton(root, text="Low", variable=sensitivity_var, value="Low").pack(anchor="w", padx=20)
 
 tk.Button(root, text="Submit", command=submit).pack(pady=20)
@@ -52,7 +52,7 @@ root = tk.Tk()
 root.title("Sensitivity Input Wizard")
 root.geometry("300x200")
 
-tk.Label(root, text="Enter blink sensitivity percentage (numeric):", font=("Arial", 12)).pack(pady=10)
+tk.Label(root, text="Enter blink sensitivity percentage (numeric):\n(Recommended = 25)", font=("Arial", 12)).pack(pady=10)
 
 sensitivity_var = tk.StringVar()
 
@@ -87,8 +87,9 @@ IRIS1_LEFT = 362
 IRIS1_RIGHT = 263
 IRIS2_LEFT = 33
 IRIS2_RIGHT = 133
-THRESHOLD_VERTICAL_U = -6
-THRESHOLD_VERTICAL_D = 6
+THRESHOLD_VERTICAL_UP = 0.1  # Iris closer to top 30%
+THRESHOLD_VERTICAL_DOWN = 2 # Iris closer to bottom 70%
+SCALE_VERTICAL = 2.2  # Scale factor for vertical sensitivity
 
 # Keyboard setup
 
@@ -218,14 +219,14 @@ def run_eye_tracker():
 
     if results.multi_face_landmarks:
         landmarks = [(lm.x * frame.shape[1], lm.y * frame.shape[0]) for lm in results.multi_face_landmarks[0].landmark]
-        initial_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
-        top_y = landmarks[BLINK_TOP][1]
-        bottom_y = landmarks[BLINK_BOTTOM][1]
-        blink_threshold = (bottom_y - top_y) * BLINK_SENSITIVITY
+        # Get eye boundaries
+        left_eye_top = landmarks[386][1]
+        left_eye_bottom = landmarks[374][1]
+        eye_height = left_eye_bottom - left_eye_top
+        blink_threshold = eye_height * BLINK_SENSITIVITY
     else:
-        initial_iris_y = None
-        blink_threshold = None
-        print("ERROR: No face detected !!")
+        print("Please position face in camera view...")
+        time.sleep(0.5)
 
     previous_time = time.time()
     counter = 0
@@ -263,8 +264,11 @@ def run_eye_tracker():
                 right_iris_center = np.mean(right_iris, axis=0).astype(int)
             
                 # Calculate vertical difference
-                left_iris_diff = abs(left_iris_center[1] - left_eyebrow[0][1]) / abs(left_eyebrow[0][1] - nose_tip[0][1])
-                right_iris_diff = abs(right_iris_center[1] - right_eyebrow[0][1]) / abs(right_eyebrow[0][1] - nose_tip[0][1])
+                # Calculate vertical difference
+                left_iris_center_y = np.mean([landmarks[474][1], landmarks[475][1], landmarks[476][1], landmarks[477][1]])
+                vertical_ratio = (left_iris_center_y - left_eye_top) / eye_height
+                vertical_ratio_scaled = (vertical_ratio - 0.5) * SCALE_VERTICAL  # Center at 0
+                print(vertical_ratio_scaled)
 
                 left_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
 
@@ -287,10 +291,6 @@ def run_eye_tracker():
                 top_y = landmarks[BLINK_TOP][1]
                 bottom_y = landmarks[BLINK_BOTTOM][1]
                 blink_diff = bottom_y - top_y
-
-                # print(int(left_iris_diff*100),int(right_iris_diff*100))
-
-                vertical_movement = left_iris_y - initial_iris_y
 
                 if blink_diff < blink_threshold and time.time() - previous_time > 0.8:
                     previous_time = time.time()
@@ -316,36 +316,22 @@ def run_eye_tracker():
                         root.after(0, move_highlight, current_row, current_col + 1)
                         print("Right")
 
-                elif (vertical_movement > THRESHOLD_VERTICAL_D) and time.time() - previous_time > 1.5:
-                    previous_time = time.time()
-                    counter = 0
-                    print("Down")
-                    if current_row < len(key_buttons) - 1 and current_col < len(key_buttons[current_row + 1]):
-                        root.after(0, move_highlight, current_row + 1, current_col)
-                        print("Down")
-                        
-                elif (vertical_movement < THRESHOLD_VERTICAL_U) and time.time() - previous_time > 1.5:
+                elif vertical_ratio_scaled < -THRESHOLD_VERTICAL_UP and time.time() - previous_time > 1.5:
                     previous_time = time.time()
                     counter = 0
                     print("Up")
                     if current_row > 0:
                         root.after(0, move_highlight, current_row - 1, current_col)
-                        print("Up")
-
                         
+                elif vertical_ratio_scaled > THRESHOLD_VERTICAL_DOWN and time.time() - previous_time > 1.5:
+                    previous_time = time.time()
+                    counter = 0
+                    print("Down")
+                    if current_row < len(key_buttons) - 1 and current_col < len(key_buttons[current_row + 1]):
+                        root.after(0, move_highlight, current_row + 1, current_col)
 
-                # Visualization
-                # cv2.line(frame, (0, int(initial_iris_y)), (frame.shape[1], int(initial_iris_y)), (0, 255, 255), 1)
-                cv2.circle(frame, (int(face_landmarks.landmark[473].x * frame.shape[1]), int(face_landmarks.landmark[473].y * frame.shape[0])), 3, (0, 255, 255), -1)
-                cv2.circle(frame, (int(face_landmarks.landmark[468].x * frame.shape[1]), int(face_landmarks.landmark[468].y * frame.shape[0])), 3, (0, 255, 255), -1)          
-                cv2.polylines(frame, [left_eye], True, (0, 255, 0), 1)
-                cv2.polylines(frame, [right_eye], True, (0, 255, 0), 1)
-                cv2.putText(frame, f"Eye controlled keyborad- NIT Durgapur", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                cv2.putText(frame, f"Vertical Y: {int(left_iris_y-initial_iris_y)}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                cv2.putText(frame, f"Blink Differernce: {int(blink_diff)}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-        # cv2.imshow("Eye Tracker", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        if cv2.waitKey(1000) & 0xFF == ord("q"):
             break
 
     cap.release()
