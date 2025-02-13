@@ -2,11 +2,69 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import tkinter as tk
+from tkinter import messagebox
 import threading
 import time
 import pygame
 import os
 
+def submit():
+    selected_sensitivity = sensitivity_var.get()
+    if selected_sensitivity:
+        messagebox.showinfo("Selection", f"You selected: {selected_sensitivity}")
+        root.destroy()
+    else:
+        messagebox.showwarning("Warning", "Please select a sensitivity level")
+# Create main window
+root = tk.Tk()
+root.title("Sensitivity Selection Wizard")
+root.geometry("300x200")
+
+tk.Label(root, text="Select left-right sensitivity level:", font=("Arial", 12)).pack(pady=10)
+
+sensitivity_var = tk.StringVar(value="")
+
+tk.Radiobutton(root, text="High", variable=sensitivity_var, value="High").pack(anchor="w", padx=20)
+tk.Radiobutton(root, text="Medium", variable=sensitivity_var, value="Medium").pack(anchor="w", padx=20)
+tk.Radiobutton(root, text="Low", variable=sensitivity_var, value="Low").pack(anchor="w", padx=20)
+
+tk.Button(root, text="Submit", command=submit).pack(pady=20)
+
+root.mainloop()
+
+if sensitivity_var.get() == "High":
+    THRESHOLD_HORIZONTAL = 3
+elif sensitivity_var.get() == "Medium":
+    THRESHOLD_HORIZONTAL = 2
+elif sensitivity_var.get() == "Low":
+    THRESHOLD_HORIZONTAL = 1
+
+def submit_value():
+    try:
+        selected_sensitivity = float(sensitivity_var.get())
+        messagebox.showinfo("Selection", f"You selected sensitivity: {selected_sensitivity}")
+        root.destroy()
+    except ValueError:
+        messagebox.showwarning("Warning", "Please enter a valid numerical value")
+
+# Create main window
+root = tk.Tk()
+root.title("Sensitivity Input Wizard")
+root.geometry("300x200")
+
+tk.Label(root, text="Enter blink sensitivity percentage (numeric):", font=("Arial", 12)).pack(pady=10)
+
+sensitivity_var = tk.StringVar()
+
+entry = tk.Entry(root, textvariable=sensitivity_var)
+entry.pack(pady=5)
+
+tk.Button(root, text="Submit", command=submit_value).pack(pady=20)
+
+root.mainloop()
+
+BLINK_SENSITIVITY = int(sensitivity_var.get())/100
+    
 # Eye tracking setup
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp.solutions.face_mesh.FaceMesh(
@@ -31,7 +89,6 @@ IRIS2_LEFT = 33
 IRIS2_RIGHT = 133
 THRESHOLD_VERTICAL_U = -6
 THRESHOLD_VERTICAL_D = 6
-THRESHOLD_HORIZONTAL = 2
 
 # Keyboard setup
 
@@ -164,7 +221,7 @@ def run_eye_tracker():
         initial_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
         top_y = landmarks[BLINK_TOP][1]
         bottom_y = landmarks[BLINK_BOTTOM][1]
-        blink_threshold = (bottom_y - top_y) * 0.2
+        blink_threshold = (bottom_y - top_y) * BLINK_SENSITIVITY
     else:
         initial_iris_y = None
         blink_threshold = None
