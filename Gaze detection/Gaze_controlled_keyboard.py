@@ -316,14 +316,14 @@ def run_eye_tracker():
                         root.after(0, move_highlight, current_row, current_col + 1)
                         print("Right")
 
-                elif vertical_ratio_scaled < -THRESHOLD_VERTICAL_UP and time.time() - previous_time > 1.5:
+                elif vertical_ratio_scaled < -THRESHOLD_VERTICAL_UP and time.time() - previous_time > 1:
                     previous_time = time.time()
                     counter = 0
                     print("Up")
                     if current_row > 0:
                         root.after(0, move_highlight, current_row - 1, current_col)
                         
-                elif vertical_ratio_scaled > THRESHOLD_VERTICAL_DOWN and time.time() - previous_time > 1.5:
+                elif vertical_ratio_scaled > THRESHOLD_VERTICAL_DOWN and time.time() - previous_time > 1:
                     previous_time = time.time()
                     counter = 0
                     print("Down")
