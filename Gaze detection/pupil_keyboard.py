@@ -31,7 +31,7 @@ IRIS2_LEFT = 33
 IRIS2_RIGHT = 133
 THRESHOLD_HORIZONTAL = 2
 THRESHOLD_VERTICAL_UP = 0.3  # Iris closer to top 30%
-THRESHOLD_VERTICAL_DOWN = 0.9 # Iris closer to bottom 70%
+THRESHOLD_VERTICAL_DOWN = 0.7 # Iris closer to bottom 70%
 SCALE_VERTICAL = 2.2  # Scale factor for vertical sensitivity
 
 # Initialize pygame for sound
@@ -203,6 +203,7 @@ def run_eye_tracker():
                 left_iris_center_y = np.mean([landmarks[474][1], landmarks[475][1], landmarks[476][1], landmarks[477][1]])
                 vertical_ratio = (left_iris_center_y - left_eye_top) / eye_height
                 vertical_ratio_scaled = (vertical_ratio - 0.5) * SCALE_VERTICAL  # Center at 0
+                print(vertical_ratio)
 
                 iris_x1 = landmarks[473][0]
                 left_x1 = landmarks[IRIS1_LEFT][0]
@@ -271,7 +272,7 @@ def run_eye_tracker():
                 cv2.putText(frame, f"Vertical Ratio: {vertical_ratio:.2f}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
                 cv2.putText(frame, f"Blink Difference: {int(blink_diff)}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        if cv2.waitKey(2000) & 0xFF == ord("q"):
             break
 
     cap.release()
