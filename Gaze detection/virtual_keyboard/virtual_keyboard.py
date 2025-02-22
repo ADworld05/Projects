@@ -1,5 +1,3 @@
-#highlighting the keys with arrow keys
-
 import tkinter as tk
 import pygame
 import os
@@ -21,19 +19,15 @@ def play_sound(char):
 
 def insert_char(char):
     """Inserts the clicked character into the input field."""
-    current_text = input_field.get()
-    input_field.delete(0, tk.END)
-    input_field.insert(0, current_text + char)
+    input_field.insert(tk.END, char)
 
 def backspace():
     """Deletes the last character in the input field."""
-    current_text = input_field.get()
-    input_field.delete(0, tk.END)
-    input_field.insert(0, current_text[:-1])
+    input_field.delete(len(input_field.get()) - 1, tk.END)
 
 # Create the main application window
 root = tk.Tk()
-root.title("QWERTY Virtual Keyboard")
+root.title("Custom Virtual Keyboard")
 root.geometry("720x440")
 
 # Input field
@@ -43,58 +37,48 @@ input_field.grid(row=0, column=0, columnspan=10, pady=10)
 # Keyboard layout
 
 keys = [
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-    ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
-    ["k", "l", "m", "n", "o", "p", "q", "r", "s"],
-    ["t", "u", "v", "w", "x", "y", "z"],
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],  # Row 1
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],  # Row 2
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],       # Row 3
+    ["z", "x", "c", "v", "b", "n", "m"],                # Row 4
 ]
 
-# Dictionary to store button references for highlighting
+# Create buttons and store references
 key_buttons = []
-for row, key_row in enumerate(keys):
+for row, key_row in enumerate(keys, start=1):
     button_row = []
     for col, key in enumerate(key_row):
         btn = tk.Button(
-            root,
-            text=key,
-            font=("Arial", 14),
-            width=4,
-            height=2,
-            bg="lightgray",
-            command=lambda char=key: insert_char(char),
-        )
-        btn.grid(row=row + 1, column=col, padx=5, pady=5)
+            root, text=key, font=("Arial", 14), width=4, height=2, bg="lightgray",
+            command=lambda char=key: insert_char(char))
+        btn.grid(row=row, column=col, padx=5, pady=5)
         button_row.append(btn)
 
-    if(row == 3):
-        # Add space and backspace to the button grid for navigation
-        btn = tk.Button(
-            root,
-            text="__",
-            font=("Arial", 14),
-            width=4,
-            height=2,
-            bg="lightgray",
-            command=lambda: insert_char(" "),
-        )
-        btn.grid(row=row + 1, column=7, padx=5, pady=5)
-        button_row.append(btn)
-        btn = tk.Button(
-            root,
-            text="⌫",
-            font=("Arial", 14),
-            width=4,
-            height=2,
-            bg="lightgray",
-            command=backspace,
-        )
-        btn.grid(row=row + 1, column=8, padx=5, pady=5)
-        button_row.append(btn)
+# Add Spacebar and Backspace buttons separately
+space_button = tk.Button(
+    root,
+    text="Space",
+    font=("Arial", 14),
+    width=15,
+    height=2,
+    bg="lightgray",
+    command=lambda: insert_char(" "),
+)
+space_button.grid(row=5, column=0, columnspan=5, pady=5)
 
-    key_buttons.append(button_row)
+backspace_button = tk.Button(
+    root,
+    text="Backspace",
+    font=("Arial", 14),
+    width=15,
+    height=2,
+    bg="lightgray",
+    command=backspace,
+)
+backspace_button.grid(row=5, column=5, columnspan=5, pady=5)
 
-current_row, current_col = 0, 0
-key_buttons[current_row][current_col].config(bg="yellow")
+# Add space and backspace to the button grid for navigation
+key_buttons.append([space_button, backspace_button])
 
 # Initial highlighted key
 current_row, current_col = 0, 0
@@ -126,13 +110,6 @@ def handle_keypress(event):
         move_highlight(current_row - 1, min(current_col, len(key_buttons[current_row - 1]) - 1))
     elif event.keysym == "Down" and current_row < len(key_buttons) - 1:
         move_highlight(current_row + 1, min(current_col, len(key_buttons[current_row + 1]) - 1))
-
-def select_highlighted_key(event):
-    """Simulate a button press for the highlighted key."""
-    key_buttons[current_row][current_col].invoke()  # Simulates a button click
-
-# Bind Enter key to trigger the highlighted button
-root.bind("<Button-1>", select_highlighted_key)
 
 # Bind arrow keys to movement
 root.bind("<Left>", handle_keypress)
