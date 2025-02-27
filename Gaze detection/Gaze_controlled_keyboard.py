@@ -330,7 +330,7 @@ def run_eye_tracker():
                     if current_row < len(key_buttons) - 1 and current_col < len(key_buttons[current_row + 1]):
                         root.after(0, move_highlight, current_row + 1, current_col)
 
-        cv2.imshow("Gaze Detector", frame)
+        # cv2.imshow("Gaze Detector", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
