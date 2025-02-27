@@ -52,7 +52,7 @@ root = tk.Tk()
 root.title("Sensitivity Input Wizard")
 root.geometry("300x200")
 
-tk.Label(root, text="Enter blink sensitivity percentage (numeric):\n(Recommended = 25)", font=("Arial", 12)).pack(pady=10)
+tk.Label(root, text="Enter blink sensitivity percentage (numeric):\n(Recommended = 10)", font=("Arial", 12)).pack(pady=10)
 
 sensitivity_var = tk.StringVar()
 
@@ -268,7 +268,7 @@ def run_eye_tracker():
                 left_iris_center_y = np.mean([landmarks[474][1], landmarks[475][1], landmarks[476][1], landmarks[477][1]])
                 vertical_ratio = (left_iris_center_y - left_eye_top) / eye_height
                 vertical_ratio_scaled = (vertical_ratio - 0.5) * SCALE_VERTICAL  # Center at 0
-                print(vertical_ratio_scaled)
+                # print(vertical_ratio_scaled)
 
                 left_iris_y = np.mean([landmarks[159][1], landmarks[145][1]])
 
@@ -330,8 +330,8 @@ def run_eye_tracker():
                     if current_row < len(key_buttons) - 1 and current_col < len(key_buttons[current_row + 1]):
                         root.after(0, move_highlight, current_row + 1, current_col)
 
-
-        if cv2.waitKey(1000) & 0xFF == ord("q"):
+        cv2.imshow("Gaze Detector", frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
     cap.release()
